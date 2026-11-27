@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Chat</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0a0a;--card:#161616;--line:#2a2a2a;--text:#f4efe9;--mute:#a9a39b;--red:#e5384f;--gold:#e8c27a;--me:#3a2a10;--them:#1c1c1c}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 15% 0%,#2b0e17 0%,transparent 55%),radial-gradient(ellipse at 95% 60%,#1e1608 0%,transparent 50%),var(--bg);color:var(--text);font-family:Georgia,"Times New Roman",serif;overflow:hidden}
+.scr{height:100dvh;height:100vh;display:flex;flex-direction:column}
+@supports(height:100dvh){.scr{height:100dvh}}
+#setup{align-items:center;justify-content:center;padding:24px;padding-top:calc(24px + env(safe-area-inset-top,0px));overflow-y:auto;text-align:center}
+#setup .box{width:100%;max-width:420px;margin:auto}
+h1{font-size:2rem;font-weight:400;margin:6px 0;background:linear-gradient(90deg,#e8c27a,#f9e9c0,#e8c27a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mute);margin:0 0 18px;font-size:.95rem}
+input,textarea{width:100%;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:13px;font-size:1rem;font-family:inherit;outline:none;margin-bottom:12px}
+input:focus,textarea:focus{border-color:var(--red)}
+.chips{display:flex;gap:10px;margin-bottom:12px}
+.chip{flex:1;padding:13px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:1rem;font-family:inherit;cursor:pointer}
+.chip.on{border-color:var(--red);box-shadow:0 0 16px rgba(229,56,79,.3)}
+button.main{width:100%;background:var(--red);color:#fff;border:0;border-radius:40px;padding:14px;font-size:1.05rem;font-family:inherit;cursor:pointer;animation:glow 2.6s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 18px rgba(229,56,79,.6)}}
+#err{color:#ff8a8a;min-height:22px;margin-top:10px;font-size:.92rem}
+.beat{font-size:2.4rem;animation:beat 1.8s ease-in-out infinite;display:inline-block}
+@keyframes beat{50%{transform:scale(1.2)}}
+small.t{display:block;color:var(--mute);font-size:.8rem;margin-top:14px;line-height:1.5}
+/* chat */
+#chat{display:none}
+header{display:flex;align-items:center;gap:12px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top,0px));background:rgba(20,20,20,.92);border-bottom:1px solid var(--line)}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#e5384f,#5a1020);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.hn{flex:1;min-width:0}
+.hn b{display:block;font-weight:400;font-size:1.1rem}
+.hn span{font-size:.8rem;color:var(--mute)}
+.menu{position:relative}
+.menu button.ic{background:none;border:0;color:var(--text);font-size:1.5rem;cursor:pointer;padding:4px 8px}
+.dd{display:none;position:absolute;right:0;top:36px;background:#1d1d1d;border:1px solid var(--line);border-radius:12px;min-width:190px;z-index:30;overflow:hidden}
+.dd.on{display:block}
+.dd button{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);padding:13px 16px;font-size:.98rem;font-family:inherit;cursor:pointer}
+.dd button:active{background:#2a2a2a}
+#bn{display:none;background:#3a0f16;color:#ffb3b3;padding:8px 14px;font-size:.85rem}
+#list{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:6px;-webkit-overflow-scrolling:touch}
+.day{align-self:center;background:#1c1c1c;color:var(--mute);font-size:.78rem;padding:3px 12px;border-radius:12px;margin:8px 0}
+.b{max-width:80%;padding:9px 12px 6px;border-radius:16px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap;animation:pop .28s ease-out;font-size:1.02rem}
+@keyframes pop{from{transform:scale(.85) translateY(8px);opacity:0}}
+.b.me{align-self:flex-end;background:var(--me);border:1px solid #5a4116;border-bottom-right-radius:4px}
+.b.th{align-self:flex-start;background:var(--them);border:1px solid var(--line);border-bottom-left-radius:4px}
+.b .m{display:block;text-align:right;font-size:.7rem;color:var(--mute);margin-top:3px}
+.b .m i{font-style:normal;margin-left:4px}
+.b .m i.s{color:var(--gold)}
+.b img{max-width:100%;border-radius:10px;display:block;cursor:pointer}
+.b.big{font-size:2.2rem;background:none;border:0;padding:2px 4px}
+#emo{display:none;padding:8px 12px;gap:6px;flex-wrap:wrap;background:#141414;border-top:1px solid var(--line)}
+#emo.on{display:flex}
+#emo span{font-size:1.6rem;cursor:pointer;padding:2px 4px}
+footer{display:flex;align-items:flex-end;gap:8px;padding:8px 10px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));background:rgba(20,20,20,.95);border-top:1px solid var(--line)}
+footer .ic{background:none;border:0;font-size:1.5rem;cursor:pointer;padding:6px;color:var(--text)}
+footer textarea{flex:1;margin:0;max-height:120px;resize:none;border-radius:22px;padding:11px 16px;line-height:1.35}
+#send{background:var(--red);border:0;width:44px;height:44px;border-radius:50%;font-size:1.2rem;cursor:pointer;color:#fff;flex:none}
+#send:active{transform:scale(.9)}
+#viewer{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:50;align-items:center;justify-content:center}
+#viewer.on{display:flex}
+#viewer img{max-width:96%;max-height:92%;border-radius:10px}
+.spark{position:fixed;pointer-events:none;z-index:60;animation:sp 1s ease-out forwards}
+@keyframes sp{to{transform:translate(var(--dx),var(--dy)) rotate(200deg) scale(.4);opacity:0}}
+#empty{align-self:center;color:var(--mute);text-align:center;margin:auto;padding:20px;font-size:.95rem}
+</style>
+</head>
+<body>
+
+<div class="scr" id="setup">
+  <div class="box">
+    <div class="beat">🖤</div>
+    <h1>Hamara Chat</h1>
+    <p class="sub">Sirf hum dono ke liye. Har message lock hokar jata hai.</p>
+
+    <div class="chips">
+      <button class="chip" id="cMukul" onclick="pick('Mukul')">Mukul</button>
+      <button class="chip" id="cHim" onclick="pick('Himanshi')">Himanshi</button>
+    </div>
+    <input id="pw" type="password" placeholder="Hamara secret password" autocomplete="off">
+    <button class="main" id="btn" onclick="login(false)">Chat shuru karo 🖤</button>
+    <div id="err"></div>
+    <button class="chip" style="width:100%;margin-top:16px;font-size:.9rem" onclick="login(true)">🔧 Pehli baar setup (sirf Mukul ke liye)</button>
+    <small class="t">Galat password daaloge to entry nahi milegi. Password dono ka same hona chahiye, aur wo sirf tumhare phone par rehta hai.</small>
+  </div>
+</div>
+
+<div class="scr" id="chat">
+  <header>
+    <div class="av">🖤</div>
+    <div class="hn"><b id="oname">...</b><span id="stat">&nbsp;</span></div>
+    <div class="menu">
+      <button class="ic" onclick="toggleMenu(event)">⋮</button>
+      <div class="dd" id="dd">
+        <button onclick="clearChat()">🧹 Chat saaf karo</button>
+        <button onclick="logout()">🔑 Logout</button>
+      </div>
+    </div>
+  </header>
+  <div id="bn"></div>
+  <div id="list"><div id="empty">Abhi koi message nahi.<br>Pehla message tum bhejo 🖤</div></div>
+  <div id="emo"></div>
+  <footer>
+    <button class="ic" onclick="document.getElementById('emo').classList.toggle('on')">😊</button>
+    <button class="ic" onclick="document.getElementById('fi').click()">📷</button>
+    <input type="file" id="fi" accept="image/*" style="display:none">
+    <textarea id="msg" rows="1" placeholder="Message likho..."></textarea>
+    <button id="send" onclick="sendText()">➤</button>
+  </footer>
+</div>
+
+<div id="viewer" onclick="this.classList.remove('on')"><img id="vimg" alt=""></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+var FB={apiKey:"AIzaSyBppMMur63QoKjUJ1PIgBxRVKbk4x8ktP8",authDomain:"ek-saal-chat.firebaseapp.com",databaseURL:"https://ek-saal-chat-default-rtdb.firebaseio.com",projectId:"ek-saal-chat",appId:"1:1084904179301:web:24e6cb8d21771cb3f7e88c"};
+var EMAIL='chat@ek-saal.chat',ROOM='main',SALT='ek-saal-v2';
+var enc=new TextEncoder(),dec=new TextDecoder();
+var me='',other='',key=null,db=null,refs={},els={},pend={},seenOther=0,lastDay='',started=false;
+function $(id){return document.getElementById(id)}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k);if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return null}}
+
+/* ---------- crypto ---------- */
+function b64(buf){var s='',b=new Uint8Array(buf);for(var i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
+function unb64(s){var bin=atob(s),b=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b}
+async function derive(pw){
+  var base=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits','deriveKey']);
+  var ab=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(SALT+':auth'),iterations:150000,hash:'SHA-256'},base,192);
+  var auth=Array.from(new Uint8Array(ab)).map(function(x){return x.toString(16).padStart(2,'0')}).join('');
+  var k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode(SALT+':key'),iterations:150000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  return {auth:auth,key:k};
+}
+async function seal(obj){
+  var iv=crypto.getRandomValues(new Uint8Array(12));
+  var ct=await crypto.subtle.encrypt({name:'AES-GCM',iv:iv},key,enc.encode(JSON.stringify(obj)));
+  return {iv:b64(iv),c:b64(ct)};
+}
+async function unseal(m){
+  var pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:unb64(m.iv)},key,unb64(m.c));
+  return JSON.parse(dec.decode(pt));
+}
+
+/* ---------- login (server-side password check via Firebase Auth) ---------- */
+function pick(n){me=n;$('cMukul').classList.toggle('on',n==='Mukul');$('cHim').classList.toggle('on',n==='Himanshi')}
+function say(t,ok){var e=$('err');e.style.color=ok?'#9be29b':'#ff8a8a';e.textContent=t}
+async function login(create){
+  say('');
+  if(!me){say('Pehle apna naam chuno (Mukul ya Himanshi).');return}
+  var pw=$('pw').value;
+  if(pw.length<8){say('Password kam se kam 8 akshar ka rakho.');return}
+  $('btn').disabled=true;say('Check kar raha hoon... 🔐',true);
+  try{
+    var d=await derive(pw);key=d.key;
+    if(!firebase.apps.length)firebase.initializeApp(FB);
+    db=firebase.database();
+    var au=firebase.auth();
+    if(create){
+      try{await au.createUserWithEmailAndPassword(EMAIL,d.auth)}
+      catch(e){
+        if(e.code==='auth/email-already-in-use'){key=null;say('Setup pehle ho chuka hai. Ab wahi password daalke "Chat shuru karo" dabao.');$('btn').disabled=false;return}
+        throw e;
+      }
+    }else{
+      await au.signInWithEmailAndPassword(EMAIL,d.auth);
+    }
+    ls('ek_n',me);ls('ek_p',pw);
+    start();
+  }catch(e){
+    key=null;ls('ek_p',null);
+    var c=e.code||'';
+    if(c==='auth/invalid-credential'||c==='auth/wrong-password'||c==='auth/user-not-found'||c==='auth/invalid-login-credentials')say('❌ Password galat hai. (Ya Mukul ne abhi pehli baar setup nahi kiya.)');
+    else if(c==='auth/operation-not-allowed')say('Firebase mein Email/Password sign-in chalu nahi hai. Authentication > Sign-in method mein enable karo.');
+    else if(c==='auth/too-many-requests')say('Bahut zyada koshish ho gayi. Thodi der baad dobara try karo.');
+    else if(c==='auth/network-request-failed')say('Internet nahi hai.');
+    else say('Error: '+(c||e.message));
+  }
+  $('btn').disabled=false;
+}
+function logout(){ls('ek_p',null);ls('ek_n',null);try{firebase.auth().signOut()}catch(e){}setTimeout(function(){location.reload()},250)}
+
+/* ---------- chat ---------- */
+var TS=function(){return firebase.database.ServerValue.TIMESTAMP};
+function banner(t){var b=$('bn');b.textContent=t;b.style.display=t?'block':'none'}
+function start(){
+  if(started)return;started=true;
+  other=me==='Mukul'?'Himanshi':'Mukul';
+  refs.base=db.ref('rooms/'+ROOM);refs.msgs=refs.base.child('msgs');
+  $('oname').textContent=other;
+  $('setup').style.display='none';$('chat').style.display='flex';
+  buildEmoji();
+  function bad(e){banner('⚠️ Database se message nahi aa pa rahe: '+((e&&e.message)||e)+' Rules ya login check karo.')}
+  refs.msgs.limitToLast(300).on('child_added',onAdd,bad);
+  refs.msgs.on('child_removed',function(s){var e=els[s.key];if(e){e.remove();delete els[s.key]}if(!$('list').querySelector('.b'))showEmpty()},bad);
+  refs.base.child('seen/'+other).on('value',function(s){seenOther=s.val()||0;ticks()},bad);
+  var on=false,ts=0,ty=false,conn=false;
+  function stat(){$('stat').textContent=!conn?'connect ho raha hai...':ty?'typing...':on?'online 🟢':(ts?'last seen '+fmtTime(ts):'\u00a0')}
+  refs.base.child('online/'+other).on('value',function(s){on=!!s.val();stat()});
+  refs.base.child('ls/'+other).on('value',function(s){ts=s.val()||0;stat()});
+  refs.base.child('typing/'+other).on('value',function(s){ty=!!s.val();stat()});
+  db.ref('.info/connected').on('value',function(s){
+    conn=s.val()===true;stat();
+    if(conn){
+      var o=refs.base.child('online/'+me);o.onDisconnect().set(false);
+      refs.base.child('ls/'+me).onDisconnect().set(TS());
+      refs.base.child('typing/'+me).onDisconnect().set(false);
+      o.set(true);markSeen();
+    }
+  });
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)markSeen()});
+  var tt=null;
+  $('msg').addEventListener('input',function(){
+    this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';
+    refs.base.child('typing/'+me).set(true);clearTimeout(tt);tt=setTimeout(function(){refs.base.child('typing/'+me).set(false)},2200);
+  });
+  $('msg').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth>700){e.preventDefault();sendText()}});
+  $('fi').addEventListener('change',function(){if(this.files[0])pickImg(this.files[0]);this.value=''});
+}
+function showEmpty(){var l=$('list');l.textContent='';var d=document.createElement('div');d.id='empty';d.innerHTML='Abhi koi message nahi.<br>Pehla message tum bhejo 🖤';l.appendChild(d)}
+function fmtTime(t){var d=new Date(t),h=d.getHours(),m=d.getMinutes(),ap=h>=12?'pm':'am';h=h%12||12;return h+':'+(m<10?'0':'')+m+' '+ap}
+function dayLabel(t){
+  var d=new Date(t),n=new Date(),y=new Date(n.getFullYear(),n.getMonth(),n.getDate()-1);
+  var k=d.toDateString();if(k===n.toDateString())return 'Aaj';if(k===y.toDateString())return 'Kal';
+  return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+}
+function onAdd(snap){
+  var m=snap.val(),k=snap.key,l=$('list');
+  if(!m||!m.iv||!m.c)return;
+  var em=$('empty');if(em)em.remove();
+  var t=m.t||Date.now();
+  var dk=new Date(t).toDateString();
+  if(dk!==lastDay){lastDay=dk;var dd=document.createElement('div');dd.className='day';dd.textContent=dayLabel(t);l.appendChild(dd)}
+  var el=document.createElement('div');el.className='b th';el.textContent='...';el.dataset.t=t;el.dataset.k=k;
+  l.appendChild(el);els[k]=el;scrollDown();
+  unseal(m).then(function(o){
+    var mine=o.s===me;
+    el.className='b '+(mine?'me':'th');el.textContent='';
+    if(o.k==='i'){var im=document.createElement('img');im.src=o.v;im.onclick=function(e){e.stopPropagation();$('vimg').src=o.v;$('viewer').classList.add('on')};im.onload=scrollDown;el.appendChild(im)}
+    else{
+      var txt=String(o.v);
+      if(/^(\p{Extended_Pictographic}|\u200d|\ufe0f|\s){1,8}$/u.test(txt)&&txt.trim())el.classList.add('big');
+      el.appendChild(document.createTextNode(txt));
+    }
+    var mt=document.createElement('span');mt.className='m';mt.textContent=fmtTime(t);
+    if(mine){var tk=document.createElement('i');tk.className='tk';mt.appendChild(tk);el.dataset.mine='1'}
+    el.appendChild(mt);ticks();scrollDown();
+    if(!mine)markSeen();
+  }).catch(function(){
+    el.className='b th';el.textContent='🔒 Ye message khul nahi paya.';
+  });
+}
+function ticks(){
+  document.querySelectorAll('.b[data-mine="1"]').forEach(function(e){
+    var tk=e.querySelector('.tk');if(!tk)return;
+    var seen=Number(e.dataset.t)<=seenOther;
+    if(pend[e.dataset.k]){tk.textContent='🕓';tk.className='tk'}
+    else{tk.textContent=seen?'✓✓':'✓';tk.className='tk'+(seen?' s':'')}
+  });
+}
+function markSeen(){if(!document.hidden&&refs.base&&started)refs.base.child('seen/'+me).set(TS())}
+function scrollDown(){var l=$('list');l.scrollTop=l.scrollHeight}
+async function push(o){
+  var s=await seal(Object.assign({s:me},o));
+  var r=refs.msgs.push();pend[r.key]=1;
+  try{await r.set({t:TS(),iv:s.iv,c:s.c});delete pend[r.key];ticks()}
+  catch(e){delete pend[r.key];throw e}
+}
+function sendText(){
+  var t=$('msg').value.trim();if(!t||!started)return;
+  $('msg').value='';$('msg').style.height='auto';
+  refs.base.child('typing/'+me).set(false);
+  burst(window.innerWidth-40,window.innerHeight-60);
+  push({k:'t',v:t}).catch(function(e){banner('⚠️ Message nahi gaya: '+e.message)});
+}
+function pickImg(f){
+  var r=new FileReader();
+  r.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var s=Math.min(1,800/Math.max(im.width,im.height));
+      var c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
+      c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+      burst(window.innerWidth/2,window.innerHeight-80);
+      push({k:'i',v:c.toDataURL('image/jpeg',.6)}).catch(function(e){banner('⚠️ Photo nahi gayi: '+e.message)});
+    };
+    im.src=r.result;
+  };
+  r.readAsDataURL(f);
+}
+function buildEmoji(){
+  var box=$('emo');if(box.childNodes.length)return;
+  ['❤️','🖤','😘','🥺','😂','🤗','🥰','😍','🌹','✨','🥟','😤','😭','👍','🙈','💋'].forEach(function(e){
+    var s=document.createElement('span');s.textContent=e;
+    s.onclick=function(){var m=$('msg');m.value+=e;m.focus()};
+    box.appendChild(s);
+  });
+}
+function toggleMenu(e){e.stopPropagation();$('dd').classList.toggle('on')}
+document.addEventListener('click',function(){var d=$('dd');if(d)d.classList.remove('on')});
+function clearChat(){
+  if(!confirm('Pura chat dono ke liye hamesha ke liye delete ho jayega. Pakka?'))return;
+  refs.msgs.remove();refs.base.child('seen').remove();
+}
+function burst(x,y){
+  var E=['💖','✨','💫','🖤','💕','🎀'];
+  for(var i=0;i<8;i++){
+    var s=document.createElement('span');s.className='spark';s.textContent=E[i%E.length];
+    s.style.left=x+'px';s.style.top=y+'px';s.style.fontSize=(15+Math.random()*10)+'px';
+    var a=Math.random()*6.28,r=50+Math.random()*60;
+    s.style.setProperty('--dx',(Math.cos(a)*r)+'px');s.style.setProperty('--dy',(Math.sin(a)*r-50)+'px');
+    document.body.appendChild(s);setTimeout(function(e){e.remove()},1100,s);
+  }
+}
+
+/* ---------- boot ---------- */
+(function(){
+  var n=ls('ek_n'),p=ls('ek_p');
+  if(n)pick(n);
+  if(n&&p){$('pw').value=p;login(false)}
+})();
+</script>
+</body>
+</html>
